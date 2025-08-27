@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitor de Signos Vitales en Tiempo Real</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+    h1 { color: #333; }
+    .vital { font-size: 24px; margin: 10px; }
+    #bpm { color: #ff0000; }
+    #spo2 { color: #0000ff; }
+    #temp { color: #00ff00; }
+  </style>
+  <script src="https://unpkg.com/paho-mqtt@1.1.0/paho-mqtt.js"></script>
+  <script>
+    // Configuración MQTT
+    const client = new Paho.MQTT.Client("192.168.56.1", 9001, "web_client_" + parseInt(Math.random() * 100));
+    client.onConnectionLost = onConnectionLost;
+    client.onMessageArrived = onMessageArrived;
+
+    client.connect({
+      onSuccess: onConnect,
+      onFailure: (e) => console.log("Error de conexión: " + e.errorMessage)
+    });
+
+    function onConnect() {
+      console.log("✅ Conectado a MQTT");
+      client.subscribe("vitals");
+    }
+
+    function onConnectionLost(responseObject) {
+      if (responseObject.errorCode !== 0) {
+        console.log("❌ Conexión perdida: " + responseObject.errorMessage);
+      }
+    }
+
+    function onMessageArrived(message) {
+      const data = JSON.parse(message.payloadString);
+      document.getElementById('bpm').textContent = data.bpm || 'N/A';
+      document.getElementById('spo2').textContent = data.spo2 || 'N/A';
+      document.getElementById('temp').textContent = data.temp.toFixed(1) || 'N/A';
+    }
+  </script>
+</head>
+<body>
+  <h1>Monitor de Signos Vitales</h1>
+  <div class="vital">💓 BPM: <span id="bpm">0</span></div>
+  <div class="vital">🩸 SpO₂: <span id="spo2">0</span>%</div>
+  <div class="vital">🌡 Temperatura: <span id="temp">0.0</span> °C</div>
+</body>
+</html>
